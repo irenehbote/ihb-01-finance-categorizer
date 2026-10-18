@@ -3,6 +3,9 @@
 A test that still passes against broken code gives false confidence. Each mutant below is
 the real schemas.py with one deliberate bug, and the test it targets must fail against it.
 
+    schemas.py ──patch one line──▶ mutant ──run target test──┬──▶ fails   ✓ caught
+                                                             └──▶ passes  ✗ test too weak
+
 Mutants are built by patching the live source at test time instead of storing 12 edited
 copies: copies would drift from schemas.py, while a patch whose target line no longer
 exists fails loudly and forces the mutant to be updated.

@@ -2,6 +2,16 @@
 
 Each row from csv.DictReader is validated on its own, so one bad row becomes one entry in
 the upload's error list instead of failing the whole file.
+
+How one row flows through TransactionRow (full diagram: docs/LEARNING_LOG.md, session 2):
+
+    {"Fecha": "03/10/2026", "Concepto": " CAFE SOL ", "Importe": "-3,50", "Saldo": ""}
+          │                    │                       │                  │
+     parse_bank_date     clean_description        parse_amount      parse_balance
+          │                    │                       │                  │
+     date(2026, 10, 3)     "CAFE SOL"         Decimal("-3.50")          None
+          └────────────────────┴───────────┬───────────┴──────────────────┘
+              ✓ TransactionRow (frozen)    or    ✗ ValidationError → row rejected
 """
 
 # Imported as a module because the field is called `date`: `date: date` inside the class

@@ -95,3 +95,11 @@ One entry per decision. Each lists the options I considered, what I chose, the l
 **Why:** Per-row validation and error reporting is the core requirement, and Pydantic is already the validator.
 **Limitations accepted:** Encoding (UTF-8 vs cp1252) must be detected or configured by me.
 **Revisit if:** I need bulk transformations over many files.
+
+## D-008: Visual learning system and early STYLE.md (2026-10-18, project-wide)
+**Context:** I learn best visually, so every concept should come with a diagram in my Lab Notebook style. Rule: visuals follow `docs/STYLE.md`, which didn't exist yet, and the Lab Notebook kit isn't in the repo.
+**Options considered:** Only one reasonable format for in-repo diagrams: Mermaid. It's text (diffs and reviews like code) and GitHub renders it. Exported SVG/PNG can't be diffed, and the kit's SVG generator isn't available yet.
+**Decision:** Start `docs/STYLE.md` now with the tokens, a contrast check and diagram conventions (4 node roles: step, good ✓, bad ✗, planned). Diagrams go in three places: Mermaid in the learning log and README, ASCII sketches in module docstrings, inline SVG in chat. New token use: the dark-mode accent override `#5CC29A`.
+**Why:** The contrast check showed the light accent `#1F7A5A` is 3.47:1 on the dark background and muted text on the grid fill is 4.29:1, both below 4.5:1, so those pairs are banned in STYLE.md.
+**Limitations accepted:** Mermaid on GitHub can't load Fraunces or DM Sans, so it uses GitHub's font. Learning diagrams don't count toward the 5-session visual polish budget, which stays for UI, charts and README polish.
+**Revisit if:** The kit arrives (add banners, results card, mplstyle) or a diagram needs exact layout Mermaid can't do (switch that one to SVG).
