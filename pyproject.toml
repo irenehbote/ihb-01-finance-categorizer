@@ -9,6 +9,7 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
     "fastapi>=0.146.0",
     "python-multipart>=0.0.32",
+    "sqlalchemy>=2.1.5",
     "uvicorn>=0.54.0",
 ]
 
@@ -35,3 +36,7 @@ target-version = "py313"
 [tool.ruff.lint]
 # E/F: errors and bugs, I: import order, B: likely bugs, UP: modern syntax, ANN: type hints (rule 3).
 select = ["E", "F", "I", "B", "UP", "ANN"]
+
+[tool.ruff.lint.isort]
+# Explicit, because auto-detection under src/ is unreliable before every module exists.
+known-first-party = ["finance_api"]

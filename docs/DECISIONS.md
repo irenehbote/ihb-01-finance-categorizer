@@ -52,3 +52,46 @@ One entry per decision. Each lists the options I considered, what I chose, the l
 **Why:** A leaked statement can't be un-published (forks and caches keep it).
 **Limitations accepted:** Evaluation data can't be shared; the README will describe the dataset instead.
 **Revisit if:** I build a fully synthetic labeled dataset that is safe to publish.
+
+## D-005: Database access layer (2026-10-18, Feature 1.1)
+**Context:** Store uploaded transactions in SQLite, with a uniqueness rule for duplicates.
+**Options considered:**
+| Option | Pros | Cons / limitations |
+| --- | --- | --- |
+| SQLAlchemy 2.0 | Typed models; constraints declared in code; Postgres is a URL change; common in job postings | Learning curve; generated SQL is hidden |
+| raw sqlite3 | Stdlib, explicit SQL, `INSERT OR IGNORE` | Manual row mapping; SQL in strings; tied to SQLite |
+**Decision:** SQLAlchemy 2.0, chosen by me.
+**Why:** Portable and typed; IHB-04 (SQL agent) already covers hand-written SQL.
+**Limitations accepted:** More abstraction; I'll check the emitted SQL with `echo=True` when debugging.
+**Revisit if:** The schema stays one table and the ORM adds more friction than value.
+
+## D-006: Duplicate detection (2026-10-18, Feature 1.1)
+**Context:** Uploading the same CSV twice must not double my data, but two identical real purchases (same café, same day, same amount) must both be kept. My export has no Saldo (balance) column, but the code must also handle exports that do.
+**Options considered:**
+| Option | Pros | Cons / limitations |
+| --- | --- | --- |
+| Composite UNIQUE constraint | DB enforces it | Whitespace/case variants slip through; long key |
+| Row hash checked in code | Normalization in one place | Check-then-insert race; no DB guarantee |
+| Hash column + UNIQUE | Normalization and DB guarantee | Changing normalization means re-hashing old rows |
+**Follow-up: how to use Saldo when present:**
+| Option | Pros | Cons / limitations |
+| --- | --- | --- |
+| A. Saldo replaces occurrence count | Best key per format | Two code paths to test |
+| B. Ignore Saldo for dedupe | One path; works across mixed formats | Wastes the best uniqueness signal |
+| C. Occurrence count + Saldo when present | One path; Saldo removes the mid-day-cut edge case | Same account exported with and without Saldo won't dedupe across formats |
+**Decision:** Hash + UNIQUE, chosen by me. Hash input: normalized date, description, amount, the row's occurrence count among identical rows in the same file, plus Saldo when the export has it (option C).
+**Why:** Re-uploads produce identical hashes and are skipped; identical legitimate rows get occurrence 1, 2 and are both kept.
+**Limitations accepted:** Without Saldo, an export that cuts a day in half can miss one identical row. Mixing exports with and without Saldo for the same account creates duplicates.
+**Revisit if:** I start mixing export formats for one account (switch to option B).
+
+## D-007: CSV parsing (2026-10-18, Feature 1.1)
+**Context:** Bad rows must be reported with their row number without failing the whole upload.
+**Options considered:**
+| Option | Pros | Cons / limitations |
+| --- | --- | --- |
+| csv module | Row by row, exact row numbers, each row straight into Pydantic, no dependency | More code; encoding handled manually |
+| pandas | One-line `read_csv` | Column-wise parsing hides per-row errors (`NaT`); amounts default to float; ~50 MB dependency |
+**Decision:** csv module (`DictReader`, `;` delimiter), chosen by me.
+**Why:** Per-row validation and error reporting is the core requirement, and Pydantic is already the validator.
+**Limitations accepted:** Encoding (UTF-8 vs cp1252) must be detected or configured by me.
+**Revisit if:** I need bulk transformations over many files.

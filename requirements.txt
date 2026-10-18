@@ -22,6 +22,8 @@ pydantic-core==2.50.1
     # via pydantic
 python-multipart==0.0.32
     # via finance-api
+sqlalchemy==2.1.5
+    # via finance-api
 starlette==1.8.0
     # via fastapi
 typing-extensions==4.16.0
@@ -31,6 +33,7 @@ typing-extensions==4.16.0
     #   opentelemetry-api
     #   pydantic
     #   pydantic-core
+    #   sqlalchemy
     #   typing-inspection
 typing-inspection==0.4.4
     # via
