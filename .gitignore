@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Environments and secrets: never commit keys
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Notebooks: checkpoints only; outputs are stripped by pre-commit later
+.ipynb_checkpoints/
+
+# Data and model artifacts: too large for git, documented in README instead
+data/raw/
+models/
+*.ckpt
+*.safetensors
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
