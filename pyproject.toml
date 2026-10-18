@@ -1,0 +1,37 @@
+[project]
+name = "finance-api"
+version = "0.1.0"
+description = "Categorizes bank transactions with a scikit-learn baseline and an LLM, and compares accuracy and cost."
+authors = [{ name = "irenehbote" }]
+license = "MIT"
+# Pinned to the version used locally; widened only after CI tests another version.
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi>=0.146.0",
+    "python-multipart>=0.0.32",
+    "uvicorn>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Fail on typos in markers or config instead of silently ignoring them.
+addopts = "--strict-markers --strict-config"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+# E/F: errors and bugs, I: import order, B: likely bugs, UP: modern syntax, ANN: type hints (rule 3).
+select = ["E", "F", "I", "B", "UP", "ANN"]

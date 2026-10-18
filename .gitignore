@@ -20,8 +20,17 @@ venv/
 # Notebooks: checkpoints only; outputs are stripped by pre-commit later
 .ipynb_checkpoints/
 
-# Data and model artifacts: too large for git, documented in README instead
+# Personal financial data: this repo is public, so anything derived from my real
+# bank CSVs (raw files, hand labels, the SQLite DB) must never be committed.
+# Tests use synthetic CSVs in tests/fixtures/ instead.
 data/raw/
+data/*
+!data/README.md
+*.db
+*.sqlite
+*.sqlite3
+
+# Model artifacts: too large for git, documented in README instead
 models/
 *.ckpt
 *.safetensors
