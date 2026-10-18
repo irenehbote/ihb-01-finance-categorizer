@@ -112,3 +112,10 @@ GitHub's font.
 - `flowchart LR` for pipelines, `flowchart TD` for hierarchies and before/after comparisons.
 - Real values in labels (`'2.100,00'`, `hash A`), not placeholders.
 - A one-line caption above the diagram states what it shows.
+- Verify on github.com after pushing: GitHub's Mermaid version is the one readers see.
+
+## Markdown layout
+
+GitHub merges lines that touch: a `**Field:**` line right after a list becomes part of the
+last item, and a line right after a table becomes a table row. So every `**Field:**` line,
+table and code fence has a blank line before and after it.
