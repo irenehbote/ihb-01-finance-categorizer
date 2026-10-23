@@ -178,3 +178,39 @@ flowchart LR
 **Decisions made:** D-009, D-010, D-011.
 
 **Next session starts with:** reading `parse_bank_csv` myself and explaining it back with the diagram above, then Feature 1.1 session 3: the SQLAlchemy table with the hash + UNIQUE column (D-005, D-006).
+
+## Session 4 (2026-10-23) - Feature 1.1, session 3 of 4
+
+**Steps taken:**
+
+1. Wrote the tests first: 9 for the duplicate hash (`tests/test_dedupe.py`) and 7 for saving (`tests/test_repository.py`), on an in-memory SQLite database.
+2. Added the `transactions` table with a `Cents` column type and a UNIQUE `dedupe_hash` (`db/models.py`), the hash (`db/dedupe.py`) and `save_rows` (`db/repository.py`). All written by Claude at my request (I was on a bus), not by me.
+3. Checked the tests against 13 hand-applied mutants. The first run caught 12; the missing field separator survived, so I added `test_fields_cannot_run_together`, and now all 13 are caught. Full suite: 51 passed.
+
+**Concepts learned:** SQLite stores SQLAlchemy `Numeric` as REAL, so money goes in as integer cents. `ON CONFLICT DO NOTHING` lets the database decide "new or known" in the same step as the insert, and `RETURNING id` tells us which rows went in. A hash needs a separator between fields, or two different rows can produce the same text.
+
+How one upload is saved without duplicates:
+
+```mermaid
+flowchart LR
+    R[/"parsed rows"/] --> H["dedupe_hashes<br/>casefold · no trailing zeros<br/>+ occurrence + Saldo"]
+    H --> I["INSERT … ON CONFLICT<br/>DO NOTHING<br/>RETURNING id"]
+    I --> Q{"hash already<br/>in UNIQUE column?"}
+    Q -->|no| N["✓ inserted<br/>amount as cents"]
+    Q -->|yes| S["✓ skipped<br/>counted, not an error"]
+    H -.->|"no separator"| X["✗ 'CAFE SOL' + '-3.5'<br/>= 'CAFE SOL-3.' + '5'"]
+    I -.->|"Numeric in SQLite"| Y["✗ SUM = 0.30000000000000004"]
+
+    classDef step fill:#FBFAF6,stroke:#24466B,color:#1B2A2F
+    classDef good fill:#FBFAF6,stroke:#1F7A5A,stroke-width:2px,color:#1B2A2F
+    classDef bad fill:#E6E3D9,stroke:#5F6B6E,stroke-dasharray:4 3,color:#1B2A2F
+    class R,H,I,Q step
+    class N,S good
+    class X,Y bad
+```
+
+**Problems + fixes:** The field-separator mutant survived the first test run -> added a collision test. `pytest.raises(Exception)` was too broad for the cents error -> SQLAlchemy wraps it in `StatementError`, so the test expects that.
+
+**Decisions made:** D-012 (to confirm), D-013, D-014.
+
+**Next session starts with:** reading `parse_bank_csv` and `save_rows` myself and confirming D-012, then Feature 1.1 session 4: `POST /transactions/upload` returning `{"inserted", "rejected", "errors"}`.
