@@ -139,3 +139,42 @@ flowchart LR
 **Decisions made:** D-005, D-006 (with Saldo follow-up), D-007, D-008 (visual learning system). Blank Saldo cells become `None`, not an error.
 
 **Next session starts with:** the CSV parser for the upload (encoding, row numbering, stripping Pydantic's "Value error, " prefix), written by me.
+
+## Session 3 (2026-10-23) - Feature 1.1, session 2 of 4
+
+**Steps taken:**
+
+1. Chose the file encoding, the row number in errors and the error text (D-009 to D-011).
+2. Added a cp1252 fixture (`bank_sample_cp1252.csv`) and 9 acceptance tests for the parser (`tests/test_parser.py`), run red first.
+3. Wrote `parse_bank_csv` in `src/finance_api/ingest/parser.py`. Written by Claude at my request (I was on a bus), not by me.
+4. Checked the tests against 7 hand-applied mutants (plain UTF-8, no fallback, cp1252 first, rows from 1, prefix kept, first error only, wrong delimiter): all 7 caught. Full suite: 35 passed.
+
+**Concepts learned:** Strict UTF-8 works as an encoding detector because cp1252 accents are invalid UTF-8, while cp1252 accepts almost any byte, so the fallback order matters. A BOM read as plain UTF-8 hides the first header. `ctx["error"]` holds the exception our validator raised; Pydantic's built-in errors have no `ctx`. `reader.line_num` reports where a record ends, not where it starts.
+
+How the parser picks the encoding and builds each error entry:
+
+```mermaid
+flowchart LR
+    B[/"upload bytes"/] --> U{"decode<br/>utf-8-sig"}
+    U -->|ok| T["text<br/>BOM removed"]
+    U -->|UnicodeDecodeError| W["decode cp1252"]
+    W --> T
+    T --> R["DictReader ';'<br/>enumerate from 2"]
+    R --> V{"TransactionRow"}
+    V -->|valid| OK["✓ rows"]
+    V -->|ValidationError| E["✓ errors<br/>row = file line<br/>reason = ctx error, else msg"]
+    B -.->|"cp1252 tried first"| X["✗ 'Ñ' becomes 'Ã‘'<br/>no error raised"]
+
+    classDef step fill:#FBFAF6,stroke:#24466B,color:#1B2A2F
+    classDef good fill:#FBFAF6,stroke:#1F7A5A,stroke-width:2px,color:#1B2A2F
+    classDef bad fill:#E6E3D9,stroke:#5F6B6E,stroke-dasharray:4 3,color:#1B2A2F
+    class B,U,T,W,R,V step
+    class OK,E good
+    class X bad
+```
+
+**Problems + fixes:** Ruff format removed the indentation of the ASCII sketch in the module docstring -> accepted its layout. One row with two problems -> one entry with the reasons joined by `"; "`, so `len(errors)` is the rejected count.
+
+**Decisions made:** D-009, D-010, D-011.
+
+**Next session starts with:** reading `parse_bank_csv` myself and explaining it back with the diagram above, then Feature 1.1 session 3: the SQLAlchemy table with the hash + UNIQUE column (D-005, D-006).

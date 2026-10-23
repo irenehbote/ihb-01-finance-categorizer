@@ -159,3 +159,62 @@ One entry per decision. Each lists the options I considered, what I chose, the l
 **Limitations accepted:** Mermaid on GitHub can't load Fraunces or DM Sans, so it uses GitHub's font. Learning diagrams don't count toward the 5-session visual polish budget, which stays for UI, charts and README polish.
 
 **Revisit if:** The kit arrives (add banners, results card, mplstyle) or a diagram needs exact layout Mermaid can't do (switch that one to SVG).
+
+## D-009: File encoding (2026-10-23, Feature 1.1)
+
+**Context:** Spanish bank exports come as UTF-8 (sometimes with a BOM) or as Windows cp1252. Decoding with the wrong one turns `CAFETERÍA` into `CAFETERÃ…`, and a BOM read as plain UTF-8 makes the first header `'﻿Fecha'`, so the `Fecha` alias never matches and every row is rejected.
+
+**Options considered:**
+
+| Option | Pros | Cons / limitations |
+| --- | --- | --- |
+| A. `utf-8-sig` only, reject otherwise | Simple; never stores garbled text | A cp1252 export is rejected whole |
+| B. `utf-8-sig`, fall back to `cp1252` | Covers both common Spanish bank formats | A third encoding is misread by cp1252 without an error |
+| C. `charset-normalizer` detection | Handles many encodings | New dependency; guesses can be wrong on small files |
+
+**Decision:** B, chosen by me.
+
+**Why:** Strict UTF-8 is a reliable detector: cp1252 bytes for `Í` or `Ñ` are invalid UTF-8 (checked), so trying UTF-8 first never accepts a cp1252 file by mistake. `utf-8-sig` strips the BOM when present and is identical to `utf-8` when not.
+
+**Limitations accepted:** A file in a third encoding (e.g. Latin-9 with `€`, or UTF-16) is decoded as cp1252 and can be silently wrong.
+
+**Revisit if:** A real export shows garbled descriptions after upload, or I add a bank that exports UTF-16.
+
+## D-010: Row number in upload errors (2026-10-23, Feature 1.1)
+
+**Context:** Each rejected row is reported as `{"row", "reason"}`. "Row" can mean the line in the file or the position among transactions.
+
+**Options considered:**
+
+| Option | Pros | Cons / limitations |
+| --- | --- | --- |
+| A. File line (header = 1, first transaction = 2) | Matches what an editor or Excel shows | Needs a note that row 2 is the first transaction |
+| B. Transaction index (first = 1) | Intuitive without opening the file | Matches no editor |
+
+**Decision:** A, chosen by me. Counted with `enumerate(reader, start=2)`.
+
+**Why:** The number exists so I can open the file and find the bad row; it should point at the same line the editor shows. In the fixtures, `31/02/2026` is line 7.
+
+**Limitations accepted:** A quoted description containing a line break spans two file lines; the count then numbers records, not physical lines. `reader.line_num` was rejected because it reports where a record ends, not where it starts.
+
+**Revisit if:** A real export contains multi-line quoted fields.
+
+## D-011: Reason text in upload errors (2026-10-23, Feature 1.1)
+
+**Context:** Pydantic prefixes errors raised by our validators with `"Value error, "`, e.g. `"Value error, invalid date '31/02/2026'"`. The report should show only our message.
+
+**Options considered:**
+
+| Option | Pros | Cons / limitations |
+| --- | --- | --- |
+| A. `msg.removeprefix("Value error, ")` | One line | Tied to Pydantic's wording, which can change on upgrade |
+| B. `err["ctx"]["error"]`, falling back to `msg` | Returns our own `ValueError` text unchanged | Pydantic's built-in errors ("Field required") have no `ctx`, so the fallback is required |
+| C. Keep `msg` as is | No code | Users see the `"Value error, "` noise |
+
+**Decision:** B, chosen by me.
+
+**Why:** `ctx["error"]` is the exception our validator raised, so the text is exactly what `schemas.py` wrote (checked). Built-in errors keep Pydantic's message, which has no prefix to strip.
+
+**Limitations accepted:** Built-in messages don't name the column; `err["loc"]` (the Spanish alias, e.g. `('Fecha',)`) can be added if that turns out to be confusing.
+
+**Revisit if:** A Pydantic upgrade changes the shape of `ctx`, or errors without a column name confuse me in real uploads.
